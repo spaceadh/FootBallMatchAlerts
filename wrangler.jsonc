@@ -6,7 +6,7 @@
   "kv_namespaces": [
     {
       "binding": "MATCH_KV",
-      "id": "e.g._3a8b2c9d1e4f5a6b7c8d9e0f" // Replace with your actual KV ID from Step 1
+      "id": "ab56494c3a3343d1afbd862bb6270368" // Replace with your actual KV ID from Step 1
     }
   ],
   "triggers": {
