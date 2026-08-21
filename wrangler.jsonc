@@ -10,6 +10,12 @@
     }
   ],
   "triggers": {
-    "crons": ["*/5 * * * *"]
+    "crons": [
+      "0 */3 * * *",
+      "*/5 * * * *"
+    ]
+  },
+  "observability": {
+    "enabled": true
   }
 }

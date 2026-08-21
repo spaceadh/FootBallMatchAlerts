@@ -1,76 +1,148 @@
+import { CONFIG } from "./config.js";
+import { syncSchedule } from "./schedule.js";
+import { monitorMatches } from "./monitor.js";
+
 export default {
-  // 1. Triggered automatically by Cloudflare Cron every 5 minutes
+
+  /*
+  |--------------------------------------------------------------------------
+  | Cloudflare Cron
+  |--------------------------------------------------------------------------
+  */
+
   async scheduled(event, env, ctx) {
-    await checkMatches(env);
+
+    console.log(
+      `Cron triggered: ${event.cron}`
+    );
+
+    if (
+      event.cron === CONFIG.CRONS.SCHEDULE
+    ) {
+
+      ctx.waitUntil(
+        syncSchedule(env)
+      );
+
+      return;
+    }
+
+
+    if (
+      event.cron === CONFIG.CRONS.MONITOR
+    ) {
+
+      ctx.waitUntil(
+        monitorMatches(env)
+      );
+
+      return;
+    }
+
+    console.warn(
+      `Unknown cron expression: ${event.cron}`
+    );
   },
 
-  // 2. Allows manual execution when visiting the Worker URL or testing via HTTP
+
+  /*
+  |--------------------------------------------------------------------------
+  | Manual HTTP endpoint
+  |--------------------------------------------------------------------------
+  */
+
   async fetch(request, env, ctx) {
-    try {
-      const matchCount = await checkMatches(env);
-      return new Response(`Successfully checked matches! Processed: ${matchCount}`, {
-        headers: { 'Content-Type': 'text/plain' }
+
+    const url =
+      new URL(request.url);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Health check
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      url.pathname === "/health"
+    ) {
+
+      return Response.json({
+        status: "ok",
+        service: "football-alert",
+        time: new Date().toISOString()
       });
-    } catch (err) {
-      return new Response(`Error executing match check: ${err.message}`, { status: 500 });
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Manual schedule sync
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      url.pathname === "/sync"
+    ) {
+
+      try {
+
+        await syncSchedule(env);
+
+        return Response.json({
+          success: true,
+          message:
+            "Schedule synchronized."
+        });
+
+      } catch (error) {
+
+        return Response.json(
+          {
+            success: false,
+            error: error.message
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Manual monitoring
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      url.pathname === "/monitor"
+    ) {
+
+      try {
+
+        await monitorMatches(env);
+
+        return Response.json({
+          success: true,
+          message:
+            "Match monitoring completed."
+        });
+
+      } catch (error) {
+
+        return Response.json(
+          {
+            success: false,
+            error: error.message
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+
+    return new Response(
+      "Football Alert Worker"
+    );
   }
 };
-
-async function checkMatches(env) {
-  const today = new Date().toISOString().split('T')[0];
-
-  const res = await fetch(`https://api.football-data.org/v4/matches?dateFrom=${today}&dateTo=${today}`, {
-    headers: { 'X-Auth-Token': env.FOOTBALL_API_KEY }
-  });
-
-  if (!res.ok) {
-    throw new Error(`API returned status ${res.status}`);
-  }
-
-  const data = await res.json();
-  const matches = data.matches || [];
-
-  for (const match of matches) {
-    const matchId = match.id;
-    const home = match.homeTeam.shortName || match.homeTeam.name;
-    const away = match.awayTeam.shortName || match.awayTeam.name;
-
-    // Kick-off Alert
-    if (match.status === 'IN_PLAY' || match.status === 'PAUSED') {
-      const alreadyAlerted = await env.MATCH_KV.get(`started_${matchId}`);
-      if (!alreadyAlerted) {
-        const message = `⚽ *MATCH STARTED*\n\n*${home}* vs *${away}*\n🏆 ${match.competition.name}`;
-        await sendTelegram(env, message);
-        await env.MATCH_KV.put(`started_${matchId}`, 'true', { expirationTtl: 86400 });
-      }
-    }
-
-    // Full-Time Alert
-    if (match.status === 'FINISHED') {
-      const alreadyAlerted = await env.MATCH_KV.get(`finished_${matchId}`);
-      if (!alreadyAlerted) {
-        const homeScore = match.score.fullTime.home ?? 0;
-        const awayScore = match.score.fullTime.away ?? 0;
-        const message = `🏁 *FULL TIME*\n\n*${home}* ${homeScore} - ${awayScore} *${away}*\n🏆 ${match.competition.name}`;
-        await sendTelegram(env, message);
-        await env.MATCH_KV.put(`finished_${matchId}`, 'true', { expirationTtl: 86400 });
-      }
-    }
-  }
-
-  return matches.length;
-}
-
-async function sendTelegram(env, text) {
-  const url = `https://api.telegram.org/bot${env.TELEGRAM_TOKEN}/sendMessage`;
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: env.TELEGRAM_CHAT_ID,
-      text: text,
-      parse_mode: 'Markdown'
-    })
-  });
-}
