@@ -1,15 +1,15 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "football-match-alerts",
+  "name": "footballmatchalerts",
   "main": "src/index.js",
   "compatibility_date": "2026-01-01",
   "kv_namespaces": [
     {
       "binding": "MATCH_KV",
-      "id": "YOUR_KV_NAMESPACE_ID" // Replace with your KV ID from Cloudflare
+      "id": "e.g._3a8b2c9d1e4f5a6b7c8d9e0f" // Replace with your actual KV ID from Step 1
     }
   ],
   "triggers": {
-    "crons": ["*/5 * * * *"] // Runs every 5 minutes
+    "crons": ["*/5 * * * *"]
   }
 }
