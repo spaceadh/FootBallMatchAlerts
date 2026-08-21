@@ -1,0 +1,9 @@
+football-match-alerts/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # Optional CI/CD pipeline
+├── src/
+│   └── index.js                # Main Worker code
+├── .gitignore
+├── package.json                # Project setup & dependencies
+└── wrangler.jsonc              # Cloudflare configuration file
