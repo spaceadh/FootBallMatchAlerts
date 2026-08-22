@@ -1,6 +1,7 @@
 import { CONFIG } from "./config.js";
 import {
-  getMatchesForDate
+  getMatchesForDate,
+  getCompetitionMatches
 } from "./football.js";
 
 import {
@@ -13,46 +14,112 @@ import {
 } from "./state.js";
 
 export async function syncSchedule(env) {
-  console.log("Starting schedule synchronization...");
+  console.log("Starting primary competition schedule synchronization...");
 
   const today = new Date();
 
   for (
-    let i = 0;
-    i <= CONFIG.DAYS_AHEAD;
-    i++
+    let dayOffset = 0;
+    dayOffset <= CONFIG.DAYS_AHEAD;
+    dayOffset++
   ) {
     const date = getDateString(
-      addDays(today, i)
+      addDays(today, dayOffset)
     );
 
-    try {
-      const data = await getMatchesForDate(
-        env,
-        date
-      );
+    console.log(
+      `Fetching matches for ${date}...`
+    );
 
-      const matches = data.matches || [];
+    /*
+    |--------------------------------------------------------------------------
+    | Collect matches from all competitions
+    |--------------------------------------------------------------------------
+    */
 
-      await saveSchedule(
-        env,
-        date,
-        matches
-      );
+    const allMatches = [];
 
-      console.log(
-        `Cached ${matches.length} matches for ${date}`
-      );
 
-    } catch (error) {
-      console.error(
-        `Failed to sync ${date}:`,
-        error
-      );
+    for (
+      const competition
+      of COMPETITIONS
+    ) {
+
+      try {
+
+        console.log(
+          `Fetching ${competition.name}...`
+        );
+
+
+        const data =
+          await getCompetitionMatches(
+            env,
+            competition.code,
+            date
+          );
+
+
+        const matches =
+          data.matches || [];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Add competition metadata
+        |--------------------------------------------------------------------------
+        */
+
+        for (
+          const match
+          of matches
+        ) {
+
+          allMatches.push({
+            ...match,
+
+            trackedCompetition: {
+              code: competition.code,
+              name: competition.name
+            }
+          });
+        }
+
+
+        console.log(
+          `${competition.name}: ${matches.length} matches`
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          `Failed to fetch ${competition.name} for ${date}:`,
+          error
+        );
+      }
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Save combined schedule
+    |--------------------------------------------------------------------------
+    */
+
+    await saveSchedule(
+      env,
+      date,
+      allMatches
+    );
+
+
+    console.log(
+      `Cached ${allMatches.length} primary competition matches for ${date}`
+    );
   }
 
   console.log(
-    "Schedule synchronization completed."
+    "Primary competition schedule synchronization completed."
   );
 }

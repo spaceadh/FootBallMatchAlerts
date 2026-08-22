@@ -27,6 +27,25 @@ export async function footballFetch(env, endpoint) {
   );
 }
 
+/*
+|--------------------------------------------------------------------------
+| Get matches for a specific competition/date
+|--------------------------------------------------------------------------
+*/
+
+export async function getCompetitionMatches(
+  env,
+  competitionCode,
+  date
+) {
+
+  return footballFetch(
+    env,
+    `/competitions/${competitionCode}/matches?dateFrom=${date}&dateTo=${date}`
+  );
+}
+
+
 export async function getMatchesForDate(env, date) {
   return footballFetch(
     env,
