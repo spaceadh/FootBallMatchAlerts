@@ -1,4 +1,4 @@
-import { CONFIG } from "./config.js";
+import { CONFIG, COMPETITIONS } from "./config.js";
 import {
   getMatchesForDate,
   getCompetitionMatches
