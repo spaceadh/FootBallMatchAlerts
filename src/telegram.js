@@ -4,11 +4,9 @@ export async function sendTelegram(env, text) {
 
   const response = await fetch(url, {
     method: "POST",
-
     headers: {
       "Content-Type": "application/json"
     },
-
     body: JSON.stringify({
       chat_id: env.TELEGRAM_CHAT_ID,
       text,
@@ -16,17 +14,23 @@ export async function sendTelegram(env, text) {
     })
   });
 
+  const body = await response.text();
+
   if (!response.ok) {
-    const body = await response.text();
+    console.error("Telegram API ERROR:", {
+      status: response.status,
+      body
+    });
 
     throw new Error(
       `Telegram API ${response.status}: ${body}`
     );
   }
 
-  return response.json();
-}
+  console.log("Telegram message sent:", body);
 
+  return JSON.parse(body);
+}
 /*
 |--------------------------------------------------------------------------
 | Message builders
