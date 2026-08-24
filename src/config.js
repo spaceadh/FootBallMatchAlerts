@@ -20,8 +20,8 @@ export const CONFIG = {
 
   // Cron expressions
   CRONS: {
-    SCHEDULE: "0 */3 * * *",
-    MONITOR: "*/5 * * * *"
+    SCHEDULE: "0 */6 * * *",
+    MONITOR: "*/10 * * * *"
   }
 };
 
@@ -41,25 +41,25 @@ export const COMPETITIONS = [
     name: "Premier League"
   },
 
-  {
-    code: "PD",
-    name: "La Liga"
-  },
+  // {
+  //   code: "PD",
+  //   name: "La Liga"
+  // },
 
-  {
-    code: "BL1",
-    name: "Bundesliga"
-  },
+  // {
+  //   code: "BL1",
+  //   name: "Bundesliga"
+  // },
 
-  {
-    code: "SA",
-    name: "Serie A"
-  },
+  // {
+  //   code: "SA",
+  //   name: "Serie A"
+  // },
 
-  {
-    code: "FL1",
-    name: "Ligue 1"
-  },
+  // {
+  //   code: "FL1",
+  //   name: "Ligue 1"
+  // },
 
   {
     code: "CL",
